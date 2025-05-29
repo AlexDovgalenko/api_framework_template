@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+addopts = "-sv"
+markers = [
+    "smoke : light-weight subset",
+    "auth  : authentication tests"
+]
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+line_length = 120
+
+[tool.flake8]
+max-line-length = 120

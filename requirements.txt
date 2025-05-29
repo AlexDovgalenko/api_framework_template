@@ -1,0 +1,11 @@
+# application
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pyjwt
+
+# tests / tooling
+requests
+pytest
+pytest-cov
