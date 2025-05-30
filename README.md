@@ -4,7 +4,7 @@ A FastAPI micro-service and a Pytest functional suite that can be executed:
 
 - Locally on your workstation
 - Against an already-running server
-- As an all-in-one Docker container (default)
+- As an all-in-one Docker container
 
 ---
 
@@ -26,32 +26,46 @@ A FastAPI micro-service and a Pytest functional suite that can be executed:
 ## Key Capabilities
 
 - Demo API with two auth methods (Bearer & Basic) and SQLite persistence
-- Test-framework that:
-  - Auto-starts a mock server (Python or Docker)
-  - Isolates the DB between tests
-  - Runs each test 3× (none / Basic / Bearer auth)
-  - Writes a coloured console log and `logs/test_<timestamp>.log`
+- Test-framework:
+  - Auto-starts a mock server locally or withing Docker container
+  - Isolates (clean-up) the DB between tests
+  - Runs test against (None / Basic / Bearer) Auth methods
+  - Writes a coloured console log in `logs/test_<timestamp>.log` logfile
 - Three execution modes controlled by CLI flags (see below)
 
 ---
 
 ## 🚀 Quick Start
-### 1. Run Tests in Docker (default)
+### 0. Preconditions
 
-Build the image once:
+Build the Docker image:
 
 ```bash
 docker build -t api-tests:latest .
 ```
 
-Execute the suite (artefacts will be visible on the host):
+Start test FastAPI Mock application at base URL: http://localhost:50001
 
 ```bash
-mkdir -p logs results
-docker run --rm \
-  -v "$PWD/logs:/app/logs" \
-  -v "$PWD/results:/app/results" \
-  api-tests:latest pytest -sv
+uvicorn app.main:app --port=50001
+```
+
+### 1. Run Tests in Docker
+Run test using 'Detached' mode (works on Linux and MacOS, For Windows, replace $(pwd) with the absolute path of the project directory):
+
+*Start contained in the detached mode*
+```bash
+docker run --rm -td -v "$(pwd):/tests" -v "$(pwd)/logs:/tests/logs" -v "$(pwd)/results:/tests/results" --name api-tests-container api-tests
+```
+*Execute tests within running Docker container, starting mock app*
+```bash
+docker exec api-tests-container -c "python3 -m pytest -sv --log-level=INFO tests/test_users.py::test_create_and_fetch_user"
+```
+
+Run tests within docker container 'non-interactive' mode providing target URL of the service started on host machine:
+
+```bash
+docker run --rm -v "$(pwd):/tests" -v "$(pwd)/logs:/tests/logs" -v "$(pwd)/results:/tests/results" --name api-tests-container api-tests:latest -c "python3 -m pytest -sv --log-level=DEBUG --source=http://host.docker.internal:50001 tests/test_users.py::test_create_and_fetch_user"
 ```
 
 Host artefacts:
@@ -66,33 +80,36 @@ results/coverage.xml                    – code-coverage in Cobertura format
 ```bash
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\Activate
 pip install -r requirements.txt
-
-pytest --local-run
 ```
+
+```bash
+python -m pytest -sv --log-level=INFO  tests/test_users.py::test_create_and_fetch_user
+```
+
 <hr>
 
 ### 3. Point the Suite at an External Service
 
 ```bash
-pytest --source=http://api.dev.company
+python -m pytest -sv --log-level=INFO --source=http://api.dev.company  tests/test_users.py
+```
+or 
+```bash
+python -m pytest -sv --log-level=INFO --source=http://localhost:50001 tests/test_users.py
 ```
 <hr>
 
 ## 🔧 Command-line Options
 
-| Flag / Option         | Description                                                      |
-|-----------------------|------------------------------------------------------------------|
-| `--source=\<URL\>`      | Use an already running API and do not start the demo service     |
-| `--local-run`           | Start the demo app via uvicorn subprocess (Python)               |
-| `(no flag)`             | Start the demo app inside Docker (demo-tests:latest)             |
-| `--log-level=\<LVL\>`   | Console verbosity; file log always keeps INFO+                   |
+| Flag / Option         | Description                                                   |
+|-----------------------|---------------------------------------------------------------|
+| `--source=<URL>`      | Uses an already running API without start of the demo service |
+| `--log-level=\<LVL\>` | Console verbosity; file log always keeps INFO+                |
 
 ```text
-any other pytest flags e.g: `-q`, `-k smoke`, `-m auth`, `-x`
+any other pytest flags e.g: `-q`, `-s`, `-k smoke`, `-m auth`
 ```
-```text
-`--source` and `--local-run` are mutually exclusive.
-```
+
 <hr>
 
 ## 🐳 Dockerfile
@@ -101,7 +118,7 @@ any other pytest flags e.g: `-q`, `-k smoke`, `-m auth`, `-x`
 - pip install -r requirements.txt (layer-cached)
 - Copy project sources into /app
 
-Default command runs:
+Run tests with test results :
 ```bash
 pytest -q --junitxml=/app/results/junit.xml --cov=app --cov-report=xml:/app/results/coverage.xml
 ```
@@ -118,16 +135,12 @@ docker run $TEST_API_IMAGE
 ### Add Python packages
 Append them to requirements.txt and rebuild the image.
 
-### Pass extra pytest flags
-```bash
-docker run demo-tests pytest -q -m smoke --log-level=DEBUG
-```
 
 ## 🩺 Troubleshooting
 
 | Symptom                           | Fix / hint                                                  |
 |------------------------------------|-------------------------------------------------------------|
-| docker: command not found          | Install Docker Engine or run tests with `--local-run`       |
-| Port already in use (local mode)   | Ports are chosen randomly on  re-run                  |
+| docker: command not found          | Install Docker Engine and re-run tests with                |
+| Port already in use (local mode)   | Ports are chosen randomly on  re-run                        |
 | "docker Python package missing"    | Required only when host pytest spawns containers            |
 | Want coloured logs in CI artefacts | ANSI codes are preserved; convert with ansi2html if desired |
