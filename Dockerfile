@@ -28,4 +28,6 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # --junitxml ...  : save JUnit compatible results      --> /app/results/junit.xml
 # --cov --cov-... : save coverage report (optional)    --> /app/results/coverage.xml
 ENTRYPOINT ["/bin/bash"]
-# CMD ["python3 -m pytest -sv --log-level=INFO"]
+
+# Define default command to run on container start (Needs to be commenter in case if you want to use container in detached mode).
+# CMD ["python3 -m pytest -sv --log-level=INFO" tests]

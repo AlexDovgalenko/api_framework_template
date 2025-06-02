@@ -81,7 +81,7 @@ class APIClient(requests.Session):
 
 ### Internal FastAPI server (spawned when `--source` CLI argument not supplied.) ###
 @pytest.fixture(scope="session")
-def internal_test_server(request) -> Optional[dict]:
+def internal_test_server(request) -> Generator[Optional[dict], None, None]:
     external_base_url: str | None = request.config.getoption("--source")
     if external_base_url:
         yield None

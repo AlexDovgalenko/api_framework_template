@@ -26,7 +26,7 @@ class _ColourFormatter(logging.Formatter):
         colour_code = self.COLOURS.get(record.levelname, "")
         if colour_code:
             record.levelname = f"\033[{colour_code}m{record.levelname}{self.RESET}"
-        result = super().format(record)
+        result = super().format(record=record)
         # Restore original levelname
         record.levelname = original_levelname
         return result
@@ -37,8 +37,7 @@ def configure_logging(
     logfile_path: Optional[str] = None,
     enable_console: bool = True,
 ) -> None:
-    """
-    Initialise the *root* logger exactly once.
+    """Initialise the *root* logger exactly once.
 
     Arguments
     ---------
@@ -52,7 +51,7 @@ def configure_logging(
 
     root_logger.setLevel(level.upper())
     # Create plain formatter for file output
-    plain_formatter = logging.Formatter(LOG_MESSAGE_FORMAT, LOG_TIME_FORMAT)
+    plain_formatter = logging.Formatter(fmt=LOG_MESSAGE_FORMAT, datefmt=LOG_TIME_FORMAT)
 
     # Ensure logs directory exists
     logs_dir = Path(LOG_DIR)
@@ -60,17 +59,17 @@ def configure_logging(
 
     if not logfile_path:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logfile_path = logs_dir / f"test_{timestamp}.log"
+        logfile_path = logs_dir / f"test_{timestamp}.log" # type: ignore
 
     if enable_console:
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(_ColourFormatter(LOG_MESSAGE_FORMAT, LOG_TIME_FORMAT))
-        root_logger.addHandler(console_handler)
+        console_handler = logging.StreamHandler(stream=sys.stdout)
+        console_handler.setFormatter(fmt=_ColourFormatter(fmt=LOG_MESSAGE_FORMAT, datefmt=LOG_TIME_FORMAT))
+        root_logger.addHandler(hdlr=console_handler)
 
     file_handler = RotatingFileHandler(
-        str(logfile_path), maxBytes=2_000_000, backupCount=3, encoding="utf-8"
+        filename=str(object=logfile_path), maxBytes=2_000_000, backupCount=3, encoding="utf-8"
     )
-    file_handler.setFormatter(plain_formatter)
-    root_logger.addHandler(file_handler)
+    file_handler.setFormatter(fmt=plain_formatter)
+    root_logger.addHandler(hdlr=file_handler)
 
-    logging.captureWarnings(True)
+    logging.captureWarnings(capture=True)
