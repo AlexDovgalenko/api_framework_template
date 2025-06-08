@@ -24,7 +24,7 @@ def find_free_tcp_port() -> tuple[str, str]:
     with contextlib.closing(socket.socket()) as provisional_socket:
         provisional_socket.bind((host, 0))
         available_port = provisional_socket.getsockname()[1]
-        logging.debug(f"Found free TCP port: %d on host %s", available_port, host)
+        logging.debug(f"Found free TCP port: {available_port} on host {host}")
         return str(available_port), host
 
 
