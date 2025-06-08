@@ -10,21 +10,31 @@ import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Generator
+from typing import Any, Generator, Optional
 
 import pytest
 import requests
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
+
 import logging_config
 from app.db_utils import database_engine
-from tests.mock.constants import USER_DETAILS_LIST
 from utils.app_helpers import (
     find_free_tcp_port,
-    wait_for_server_response, terminate_process, retry_with_backoff,
+    retry_with_backoff,
+    terminate_process,
+    wait_for_server_response,
 )
-from utils.constants import APP_PROTOCOL, APP_DB_FILENAME, DB_PROTOCOL, LOG_DIR, JWT_SECRET, TEST_USER_EMAIL, \
-    TEST_PASSWORD
+from utils.constants import (
+    APP_DB_FILENAME,
+    APP_PROTOCOL,
+    DB_PROTOCOL,
+    JWT_SECRET,
+    LOG_DIR,
+    TEST_PASSWORD,
+    TEST_USER_EMAIL,
+    USER_DETAILS_LIST,
+)
 
 SHUTDOWN_TIMEOUT_SEC: int = 5  # Seconds to wait for the internal server to shut down gracefully
 
@@ -213,7 +223,7 @@ def auth_headers(request, client, bearer_token):
     return {"Authorization": f"Bearer {bearer_token}"}
 
 @pytest.fixture
-def mock_items(requests_mock, base_url, resource_path, mock_data) -> dict:
+def mock_items(requests_mock, base_url, res_path: str, mock_data: dict[str, Any]) -> dict:
     """
     Mocks:
       GET https://example.com/users/        → 200 + full list
@@ -221,7 +231,7 @@ def mock_items(requests_mock, base_url, resource_path, mock_data) -> dict:
                                             404 + {"error":"No such item with provided id: {id}"} (otherwise)
     Returns a dict of { id: user_dict } for convenience.
     """
-    base_mock_url = f"{base_url.rstrip('/')}/{resource_path.strip('/')}"
+    base_mock_url = f"{base_url.rstrip('/')}/{res_path.strip('/')}"
     # build a lookup items map by `id` from the mock data
     # e.g. {"1": {"id": "1", "name": "Alice"}, ...}
     items_map = {item["id"]: item for item in mock_data}
@@ -250,4 +260,4 @@ def mock_items(requests_mock, base_url, resource_path, mock_data) -> dict:
 @pytest.fixture
 def mock_user_details(mock_items) -> list[dict]:
     """Provide a sample User Details resource for mocking."""
-    return mock_items(resource_path="user/details", mock_data=USER_DETAILS_LIST)
+    return mock_items(res_path="user/details", mock_data=USER_DETAILS_LIST)
