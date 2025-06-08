@@ -1,8 +1,10 @@
 """Pytest fixtures for the framework."""
 import base64
 import contextlib
+import json
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -14,9 +16,9 @@ import pytest
 import requests
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
-
 import logging_config
 from app.db_utils import database_engine
+from tests.mock.constants import USER_DETAILS_LIST
 from utils.app_helpers import (
     find_free_tcp_port,
     wait_for_server_response, terminate_process, retry_with_backoff,
@@ -209,3 +211,43 @@ def auth_headers(request, client, bearer_token):
         encoded = base64.b64encode(raw_credentials).decode()
         return {"Authorization": f"Basic {encoded}"}
     return {"Authorization": f"Bearer {bearer_token}"}
+
+@pytest.fixture
+def mock_items(requests_mock, base_url, resource_path, mock_data) -> dict:
+    """
+    Mocks:
+      GET https://example.com/users/        → 200 + full list
+      GET https://example.com/users/<id>    → 200 + single object (if exists)
+                                            404 + {"error":"No such item with provided id: {id}"} (otherwise)
+    Returns a dict of { id: user_dict } for convenience.
+    """
+    base_mock_url = f"{base_url.rstrip('/')}/{resource_path.strip('/')}"
+    # build a lookup items map by `id` from the mock data
+    # e.g. {"1": {"id": "1", "name": "Alice"}, ...}
+    items_map = {item["id"]: item for item in mock_data}
+
+    # 1) Return "list" of all endpoints
+    requests_mock.get(base_mock_url, json=mock_data, status_code=200)
+
+    # 2) All detail endpoints via a regex + callback
+    def _callback(request, context) -> str:
+        # request.url is e.g. "https://example.com/users/<id>"
+        item_id = request.url.removeprefix(base_mock_url)
+        if item_id in items_map:
+            context.status_code = 200
+            # important to set header if you want .json() to work !!!
+            context.headers["Content-Type"] = "application/json"
+            return json.dumps(items_map[item_id])
+        else:
+            context.status_code = 404
+            context.headers["Content-Type"] = "application/json"
+            return json.dumps({"error": f"No such item with provided id: '{item_id}'."})
+
+    # register any GET on `{base_mock_url}/<something>` (but not another trailing slash e.g. `{base_mock_url}/<something>/`!!!)
+    requests_mock.get(re.compile(r"{}[^/]+$".format(re.escape(base_mock_url))), text=_callback)
+    return items_map
+
+@pytest.fixture
+def mock_user_details(mock_items) -> list[dict]:
+    """Provide a sample User Details resource for mocking."""
+    return mock_items(resource_path="user/details", mock_data=USER_DETAILS_LIST)

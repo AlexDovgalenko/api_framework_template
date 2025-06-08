@@ -12,12 +12,18 @@ import requests
 from utils.constants import TEST_USER_EMAIL
 
 
-def test_list_users(client, mock_users):
-    response = client.get("/users")
+
+def test_list_users(client, mock_user_details):
+    response = client.get("/user/details")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
-    assert response.json() == list(mock_users.values())
+    assert response.json() == list(mock_user_details.values())
 
+@pytest.mark.parametrize("user_id", ["1", "2", "3"])
+def test_get_user_by_id(client, mock_user_details, user_id):
+    response = client.get(f"/user/details/{user_id}")
+    assert response.status_code == 200
+    assert response.json() == mock_user_details[user_id]
 
 def test_create_and_fetch_user(client: requests.Session):
     unique_email = f"{uuid.uuid4()}@example.com"
