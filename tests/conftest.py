@@ -222,8 +222,8 @@ def auth_headers(request, client, bearer_token):
         return {"Authorization": f"Basic {encoded}"}
     return {"Authorization": f"Bearer {bearer_token}"}
 
-@pytest.fixture
-def mock_items(requests_mock, base_url, res_path: str, mock_data: dict[str, Any]) -> dict:
+
+def create_mock_items(requests_mock, base_url, res_path: str, mock_data: list[dict[str, Any]]) -> dict:
     """
     Mocks:
       GET https://example.com/users/        → 200 + full list
@@ -242,7 +242,7 @@ def mock_items(requests_mock, base_url, res_path: str, mock_data: dict[str, Any]
     # 2) All detail endpoints via a regex + callback
     def _callback(request, context) -> str:
         # request.url is e.g. "https://example.com/users/<id>"
-        item_id = request.url.removeprefix(base_mock_url)
+        item_id = request.url.split("/")[-1]
         if item_id in items_map:
             context.status_code = 200
             # important to set header if you want .json() to work !!!
@@ -254,10 +254,11 @@ def mock_items(requests_mock, base_url, res_path: str, mock_data: dict[str, Any]
             return json.dumps({"error": f"No such item with provided id: '{item_id}'."})
 
     # register any GET on `{base_mock_url}/<something>` (but not another trailing slash e.g. `{base_mock_url}/<something>/`!!!)
-    requests_mock.get(re.compile(r"{}[^/]+$".format(re.escape(base_mock_url))), text=_callback)
+    resource_url_pattern = f"{re.escape(base_mock_url)}/[^/]+"
+    requests_mock.get(re.compile(resource_url_pattern), text=_callback)
     return items_map
 
 @pytest.fixture
-def mock_user_details(mock_items) -> list[dict]:
+def mock_user_details(requests_mock, base_url):
     """Provide a sample User Details resource for mocking."""
-    return mock_items(res_path="user/details", mock_data=USER_DETAILS_LIST)
+    return create_mock_items(requests_mock, base_url, res_path="user/details", mock_data=USER_DETAILS_LIST)
