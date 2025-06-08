@@ -1,5 +1,5 @@
 [tool.pytest.ini_options]
-addopts = "-sv"
+addopts = "-p requests_mock -sv" # Always load the 'requests_mock' plugin and run in verbose mode
 markers = [
     "smoke : light-weight subset",
     "auth  : authentication tests"
@@ -13,3 +13,4 @@ line_length = 120
 
 [tool.flake8]
 max-line-length = 120
+max-complexity = 6
