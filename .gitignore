@@ -98,7 +98,11 @@ logs/*
 # Pytest files
 report.html
 assets
+results/**
 
 # DataBase
 *.db
 *.sql
+
+# OS 
+.DS_Store
