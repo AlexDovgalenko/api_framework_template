@@ -118,10 +118,17 @@ any other pytest flags e.g: `-q`, `-s`, `-k smoke`, `-m auth`
 - pip install -r requirements.txt (layer-cached)
 - Copy project sources into /app
 
-Run tests with test results :
+Run tests with junitxml test results and test coverage report :
 ```bash
-pytest -q --junitxml=/app/results/junit.xml --cov=app --cov-report=xml:/app/results/coverage.xml
+pytest -sv --junitxml=/results/junit.xml --cov=app --cov-report=xml:/results/coverage.xml
 ```
+
+Run tests with human-readable HTML report : 
+
+```bash
+pytest -sv --html=results/test_report.html --self-contained-html
+```
+
 
 ## 🎛️ Customisation
 
