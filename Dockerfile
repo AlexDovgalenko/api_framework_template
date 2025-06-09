@@ -12,16 +12,16 @@ ENV PYTHONUNBUFFERED=1 \
     DOCKER_CONTAINER=1
 
 ### Install system dependencies(ssl / gcc for uvicorn) and clean up apt cache
-RUN apt-get update && apt-get install -y build-essential gcc &&  rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y build-essential gcc curl &&  curl -LsSf https://astral.sh/uv/install.sh | sh && rm -rf /var/lib/apt/lists/* && rm -rf /tmp && rm -rf /var/tmp
 
-### Ensure logs directory is writable
-RUN mkdir -p /tests/logs && chmod -R 777 /tests/logs
+### Ensure `tests/logs` and `tests/results` directory are writable
+RUN mkdir -p /tests/logs && mkdir -p /tests/results && chmod -R 777 /tests/logs /tests/results
 
 ### Set working directory for pytest execution
 WORKDIR /tests
 
 ### 1. install Python requirements first (leverages Docker layer caching)
-COPY requirements.txt .
+COPY requirements*.txt pyproject.toml* *.lock* ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 ###  Define default entry point
