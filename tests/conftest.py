@@ -224,12 +224,12 @@ def auth_headers(request, client, bearer_token):
 
 
 def create_mock_items(requests_mock, base_url, res_path: str, mock_data: list[dict[str, Any]]) -> dict:
-    """
+    """Mocs API resource on given resource path, matching provided moc object data list.
     Mocks:
       GET https://example.com/users/        → 200 + full list
       GET https://example.com/users/<id>    → 200 + single object (if exists)
                                             404 + {"error":"No such item with provided id: {id}"} (otherwise)
-    Returns a dict of { id: user_dict } for convenience.
+    Returns a dict of { id: item_dict } for convenience.
     """
     base_mock_url = f"{base_url.rstrip('/')}/{res_path.strip('/')}"
     # build a lookup items map by `id` from the mock data
