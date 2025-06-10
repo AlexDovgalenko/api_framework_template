@@ -18,9 +18,9 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.auth_utils import create_jwt_token, authenticate_request
-from app.db_utils import metadata, database_engine, users_table
-from utils.constants import APP_TITLE, APP_LOGGER_NAME
+from app.auth_utils import authenticate_request, create_jwt_token
+from app.db_utils import database_engine, metadata, users_table
+from constants.common import APP_LOGGER_NAME, APP_TITLE
 
 api_logger = logging.getLogger(APP_LOGGER_NAME)
 

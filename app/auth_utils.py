@@ -2,12 +2,12 @@ import secrets
 from datetime import datetime, timedelta
 
 import jwt
-from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBasicCredentials, OAuth2PasswordBearer, HTTPBasic
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordBearer
 from sqlalchemy import select
 
-from app.db_utils import users_table, database_engine
-from utils.constants import JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_TTL_MIN
+from app.db_utils import database_engine, users_table
+from constants.common import ACCESS_TOKEN_TTL_MIN, JWT_ALGORITHM, JWT_SECRET
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 basic_scheme  = HTTPBasic(auto_error=False)

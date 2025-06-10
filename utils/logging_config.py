@@ -4,12 +4,12 @@ Global logging configuration used by both the test-runner and the demo API.
 
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
-from typing import Optional
-from pathlib import Path
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Optional
 
-from utils.constants import LOG_DIR
+from constants.common import LOG_DIR
 
 LOG_MESSAGE_FORMAT = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
 LOG_TIME_FORMAT    = "%H:%M:%S"

@@ -29,33 +29,29 @@ def find_free_tcp_port() -> tuple[str, str]:
 
 
 def wait_for_server_response(base_url: str, endpoint: str = "/openapi.json") -> None:
-    """Poll ``base_url + path`` until the server responds or raise RuntimeError.
-
-    Parameters
-    ----------
-    base_url : str
-        The scheme, host and port of the server (e.g. "http://127.0.0.1:8000").
-    endpoint : str, default "/openapi.json"
-        A lightweight endpoint that returns quickly; defaults to FastAPI’s
-        OpenAPI doc.
-
-    Raises
-    ------
-    RuntimeError
-        If the server does not respond within MAX_ATTEMPTS × SLEEP_INTERVAL_SEC.
-    """
+    """Poll ``base_url + path`` until the server responds or raise RuntimeError."""
     url = base_url.rstrip("/") + endpoint
+    last_error = None
+
     for iteration in range(1, MAX_ATTEMPTS):
         msg = f"Attempt: {iteration}: Waiting for server response on: {url}"
         logging.debug(msg)
         try:
             requests.get(url, timeout=2)
             logging.info("HTTP server started on: %s" % url)
-            return                                 # success
-        except requests.ConnectionError:
+            return  # success
+        except requests.ConnectionError as e:
+            last_error = str(e)
+            logging.debug("Connection error: %s", last_error)
             logging.debug("Sleep for %d seconds before retrying...", SLEEP_INTERVAL_SEC)
             time.sleep(SLEEP_INTERVAL_SEC)
-    raise RuntimeError("HTTP server did not start on: %s" % url)
+        except Exception as e:
+            last_error = str(e)
+            logging.debug("Unexpected error: %s", last_error)
+            logging.debug("Sleep for %d seconds before retrying...", SLEEP_INTERVAL_SEC)
+            time.sleep(SLEEP_INTERVAL_SEC)
+
+    raise RuntimeError(f"HTTP server did not start on: {url}. Last error: {last_error}")
 
 
 def terminate_process(process: "subprocess.Popen", timeout: int):

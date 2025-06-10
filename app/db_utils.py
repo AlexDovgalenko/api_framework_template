@@ -1,6 +1,6 @@
-from sqlalchemy import MetaData, Table, Column, String, create_engine
+from sqlalchemy import Column, MetaData, String, Table, create_engine
 
-from utils.constants import DATABASE_URL
+from constants.common import DATABASE_URL
 
 metadata = MetaData()
 users_table = Table(

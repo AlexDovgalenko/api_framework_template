@@ -1,6 +1,6 @@
 USER_DETAILS_LIST = [
     {
-        "id": 1,
+        "id": "1",
         "username": "alice.smith",
         "full_name": "Alice Smith",
         "is_active": True,
@@ -14,31 +14,26 @@ USER_DETAILS_LIST = [
                     "state": "NY",
                     "zip_code": "10001",
                     "country": "USA",
-                    "is_primary": True
+                    "is_primary": True,
                 }
-            ]
+            ],
         },
-        "permissions": [
-            {
-                "name": "user:read",
-                "level": 1
-            }
-        ]
+        "permissions": [{"name": "user:read", "level": 1}],
     },
     {
-        "id": 2,
+        "id": "2",
         "username": "bob.johnson",
         "full_name": "Bob Johnson",
         "is_active": True,
         "contact": {
             "email": "bob.johnson@example.com",
-            "phone": None,
-            "addresses": []
+            "phone": "+1234567891",
+            "addresses": [],
         },
-        "permissions": []
+        "permissions": [],
     },
     {
-        "id": 3,
+        "id": "3",
         "username": "charlie.brown",
         "full_name": "Charlie Brown",
         "is_active": True,
@@ -52,27 +47,18 @@ USER_DETAILS_LIST = [
                     "state": "CA",
                     "zip_code": "90001",
                     "country": "USA",
-                    "is_primary": True
+                    "is_primary": True,
                 }
-            ]
+            ],
         },
-        "permissions": [
-            {
-                "name": "user:write",
-                "level": 2
-            }
-        ]
+        "permissions": [{"name": "user:write", "level": 2}],
     },
     {
-        "id": 4,
+        "id": "4",
         "username": "diana.davis",
         "full_name": "Diana Davis",
         "is_active": False,
-        "contact": {
-            "email": "diana.davis@example.com",
-            "phone": None,
-            "addresses": []
-        },
-        "permissions": []
-    }
+        "contact": {"email": "diana.davis@example.com", "phone": None, "addresses": []},
+        "permissions": [],
+    },
 ]
