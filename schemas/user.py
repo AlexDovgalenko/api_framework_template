@@ -4,7 +4,7 @@ USER_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "required": ["id", "username", "full_name", "contact"],
     "properties": {
-        "id": {"type": "integer"},
+        "id": {"type": "string"},
         "username": {"type": "string", "minLength": 1},
         "full_name": {"type": "string", "minLength": 1},
         "is_active": {"type": "boolean", "default": True},
@@ -12,14 +12,8 @@ USER_SCHEMA: Dict[str, Any] = {
             "type": "object",
             "required": ["email"],
             "properties": {
-                "email": {
-                    "type": "string",
-                    "format": "email"
-                },
-                "phone": {
-                    "type": "string",
-                    "nullable": True
-                },
+                "email": {"type": "string", "format": "email"},
+                "phone": {"type": "string", "nullable": True},
                 "addresses": {
                     "type": "array",
                     "items": {
@@ -31,12 +25,12 @@ USER_SCHEMA: Dict[str, Any] = {
                             "state": {"type": "string", "nullable": True},
                             "zip_code": {"type": "string", "pattern": "^[0-9]+$"},
                             "country": {"type": "string", "minLength": 1},
-                            "is_primary": {"type": "boolean", "default": False}
-                        }
+                            "is_primary": {"type": "boolean", "default": False},
+                        },
                     },
-                    "default": []
-                }
-            }
+                    "default": [],
+                },
+            },
         },
         "permissions": {
             "type": "array",
@@ -45,11 +39,11 @@ USER_SCHEMA: Dict[str, Any] = {
                 "required": ["name"],
                 "properties": {
                     "name": {"type": "string"},
-                    "level": {"type": "integer", "default": 0}
-                }
+                    "level": {"type": "integer", "default": 0},
+                },
             },
-            "default": []
-        }
+            "default": [],
+        },
     },
-    "additionalProperties": False
+    "additionalProperties": False,
 }

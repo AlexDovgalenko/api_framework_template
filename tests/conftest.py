@@ -17,15 +17,8 @@ import requests
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
-import logging_config
 from app.db_utils import database_engine
-from utils.app_helpers import (
-    find_free_tcp_port,
-    retry_with_backoff,
-    terminate_process,
-    wait_for_server_response,
-)
-from utils.constants import (
+from constants.common import (
     APP_DB_FILENAME,
     APP_PROTOCOL,
     DB_PROTOCOL,
@@ -33,7 +26,14 @@ from utils.constants import (
     LOG_DIR,
     TEST_PASSWORD,
     TEST_USER_EMAIL,
-    USER_DETAILS_LIST,
+)
+from constants.user import USER_DETAILS_LIST
+from utils import logging_config
+from utils.app_helpers import (
+    find_free_tcp_port,
+    retry_with_backoff,
+    terminate_process,
+    wait_for_server_response,
 )
 
 SHUTDOWN_TIMEOUT_SEC: int = 5  # Seconds to wait for the internal server to shut down gracefully
@@ -100,24 +100,58 @@ def internal_test_server(request) -> Generator[Optional[dict], None, None]:
         return
 
     server_port, host = find_free_tcp_port()
-    base_url    = f"{APP_PROTOCOL}://{host}:{server_port}"
+    base_url = f"{APP_PROTOCOL}://{host}:{server_port}"
 
-    temp_dir      = Path(tempfile.mkdtemp())
+    temp_dir = Path(tempfile.mkdtemp())
     database_file = temp_dir / APP_DB_FILENAME
 
     child_env = os.environ | {
         "DATABASE_URL": f"{DB_PROTOCOL}:///{database_file}",
-        "JWT_SECRET":   JWT_SECRET,
+        "JWT_SECRET": JWT_SECRET,
     }
 
     logging.info("Starting internal API test server on %s", base_url)
     server_process = subprocess.Popen(
-        ["uvicorn", "app.main:app", "--port", str(server_port)],
+        ["uvicorn", "app.main:app", "--port", str(server_port), "--host", host],
         env=child_env | {"LOG_LEVEL": os.environ.get("LOG_LEVEL", "INFO")},
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,  # Line buffered
     )
-    wait_for_server_response(base_url)
+
+    # Start a thread to capture and log server output
+    def log_server_output():
+        if server_process.stdout:
+            for line in iter(server_process.stdout.readline, ""):
+                logging.debug(f"Server output: {line.strip()}")
+        else:
+            logging.error("Cannot read server output: stdout is None")
+
+    import threading
+
+    output_thread = threading.Thread(target=log_server_output, daemon=True)
+    output_thread.start()
+
+    # Check if process is still running before waiting for response
+    time.sleep(1)
+    if server_process.poll() is not None:
+        exit_code = server_process.poll()
+        output, _ = server_process.communicate()
+        error_msg = (
+            f"Server process exited immediately with code {exit_code}. Output: {output}"
+        )
+        logging.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    try:
+        wait_for_server_response(base_url)
+    except RuntimeError as e:
+        # Try to capture any output from the server to help diagnose the issue
+        output, _ = server_process.communicate(timeout=1)
+        logging.error(f"Server failed to start. Server output: {output}")
+        terminate_process(server_process, SHUTDOWN_TIMEOUT_SEC)
+        raise RuntimeError(f"Server failed to start: {str(e)}. Output: {output}")
 
     # Pass control to test session
     logging.debug(
@@ -234,7 +268,10 @@ def create_mock_items(requests_mock, base_url, res_path: str, mock_data: list[di
     base_mock_url = f"{base_url.rstrip('/')}/{res_path.strip('/')}"
     # build a lookup items map by `id` from the mock data
     # e.g. {"1": {"id": "1", "name": "Alice"}, ...}
-    items_map = {item["id"]: item for item in mock_data}
+    items_map = {str(item["id"]): item for item in mock_data}
+
+    logging.debug(f"Mocking endpoints for {base_mock_url}")
+    logging.debug(f"Available mock IDs: {list(items_map.keys())}")
 
     # 1) Return "list" of all endpoints
     requests_mock.get(base_mock_url, json=mock_data, status_code=200)
@@ -243,6 +280,8 @@ def create_mock_items(requests_mock, base_url, res_path: str, mock_data: list[di
     def _callback(request, context) -> str:
         # request.url is e.g. "https://example.com/users/<id>"
         item_id = request.url.split("/")[-1]
+        logging.debug(f"Mock received request for ID: {item_id}")
+
         if item_id in items_map:
             context.status_code = 200
             # important to set header if you want .json() to work !!!
@@ -261,4 +300,10 @@ def create_mock_items(requests_mock, base_url, res_path: str, mock_data: list[di
 @pytest.fixture
 def mock_user_details(requests_mock, base_url):
     """Provide a sample User Details resource for mocking."""
-    return create_mock_items(requests_mock, base_url, res_path="user/details", mock_data=USER_DETAILS_LIST)
+    logging.info(f"Setting up user details mock with base URL: {base_url}")
+    return create_mock_items(
+        requests_mock=requests_mock,
+        base_url=base_url,
+        res_path="user/details",
+        mock_data=USER_DETAILS_LIST,
+    )

@@ -1,8 +1,9 @@
 from typing import Any, Dict, List, Optional
 
 import jsonschema
-from jsonschema import validators
 import pytest
+from jsonschema import validators
+from jsonschema.validators import Draft202012Validator
 
 
 def format_validation_error(error: jsonschema.ValidationError) -> str:
@@ -18,7 +19,7 @@ class SchemaValidator:
     _schema_cache = {}
 
     @classmethod
-    def get_validator(cls, schema: Dict[str, Any]) -> jsonschema.validators.Validator:
+    def get_validator(cls, schema: Dict[str, Any]) -> Draft202012Validator:
         """Get or create a cached validator for the schema."""
         schema_id = id(schema)
         if schema_id not in cls._schema_cache:

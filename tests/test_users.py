@@ -1,5 +1,4 @@
-"""
-Functional tests – each test using the `auth_headers` fixture is executed
+"""Functional tests - each test using the `auth_headers` fixture is executed
 three times (unauthenticated, Basic auth, Bearer token).
 """
 
@@ -9,8 +8,11 @@ import uuid
 import pytest
 import requests
 
-from utils.constants import TEST_USER_EMAIL
-
+from constants.common import TEST_USER_EMAIL
+from models.user import User
+from schemas.user import USER_SCHEMA
+from utils.model_helpers import parse_response
+from utils.schema_validation import validate_schema
 
 
 def test_list_users(client, mock_user_details):
@@ -19,11 +21,39 @@ def test_list_users(client, mock_user_details):
     assert isinstance(response.json(), list)
     assert response.json() == list(mock_user_details.values())
 
-@pytest.mark.parametrize("user_id", ["1", "2", "3"])
-def test_get_user_by_id(client, mock_user_details, user_id):
+
+@pytest.mark.parametrize("user_id", ["1", "2", "3", "4"])
+def test_get_user_by_id(client, mock_user_details, user_id) -> None:
+    """Test getting user details by ID."""
+    response = client.get(f"/user/details/{user_id}")
+    assert response.status_code == 200, (
+        f"Failed to get user {user_id}. Response: {response.text}"
+    )
+
+    validate_schema(response.json(), USER_SCHEMA, name=f"User {user_id} response")
+    user = parse_response(
+        response.json(), User, USER_SCHEMA, data_path="", name="User Details"
+    )
+    assert user, f"User object {user_id} not found, expected a valid User object"
+    assert user.id == user_id
+    assert user.contact.email == mock_user_details[user_id]["contact"]["email"]
+
+
+@pytest.mark.parametrize("user_id", ["999", "abc", ""])
+def test_get_user_errors(client, user_id):
+    response = client.get(f"/user/details/{user_id}")
+    assert response.status_code == 404
+    assert response.json() == {"detail": "User not found"}
+
+
+@pytest.mark.parametrize("user_id", ["1", "2", "3", "4"])
+def test_user_details_schema(client, mock_user_details, user_id):
     response = client.get(f"/user/details/{user_id}")
     assert response.status_code == 200
-    assert response.json() == mock_user_details[user_id]
+
+    user_data = response.json()
+    assert validate_schema(user_data, USER_SCHEMA, name="User Details Schema")
+
 
 def test_create_and_fetch_user(client: requests.Session):
     unique_email = f"{uuid.uuid4()}@example.com"

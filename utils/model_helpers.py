@@ -1,211 +1,73 @@
-from typing import Any, Dict, Optional, Type, TypeVar
+import json
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
-from pydantic import BaseModel
+import pytest
+from pydantic import BaseModel, ValidationError
 
 from .schema_validation import validate_schema
 
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 def parse_response(
-    response_data: Dict[str, Any],
+    response_data: Union[Dict[str, Any], List[Any]],
     model_class: Type[T],
     schema: Dict[str, Any],
-    data_path: str,
+    data_path: str = "",
     validate: bool = True,
-    name: Optional[str] = None
-) -> Optional[T]:
+    name: Optional[str] = None,
+) -> T:
+    """Parse API response data into a Pydantic model with pytest integration.
+
+    Parameters
+    ----------
+    response_data : Dict[str, Any] | List[Any]
+        The API response data
+    model_class : Type[T]
+        The Pydantic model class to parse into
+    schema : Dict[str, Any]
+        JSON schema to validate against
+    data_path : str, optional
+        Path to the data in the response (e.g., "data.user")
+    validate : bool, default=True
+        Whether to perform schema validation
+    name : str | None, optional
+        Name for error messages
+
+    Returns
+    -------
+    T
+        Instance of model_class
     """
-    Parse an optional response from API data into a Pydantic model.
-    
-    Args:
-        response_data: The API response data
-        model_class: The Pydantic model class to parse into
-        schema: JSON schema to validate against
-        data_path: Path to the optional item in the response (e.g., "data.user")
-        validate: Whether to perform schema validation
-        name: Optional name for error messages
-        
-    Returns:
-        Instance of model_class or None if not present
-    """
+    context = f" for {name}" if name else ""
+
     if validate:
         validate_schema(response_data, schema, name)
-    
-    # Extract optional data from nested path
-    parts = data_path.split('.')
+
+    # Extract data from nested path
     data = response_data
-    for part in parts:
-        data = data.get(part)
-    
-    return model_class.parse_obj(data) if data is not None else None
+    if data_path:
+        for part in data_path.split("."):
+            if not isinstance(data, (dict, list)):
+                pytest.fail(
+                    f"Cannot access '{part}' in path '{data_path}'{context}: "
+                    f"parent is {type(data).__name__}, expected dict or list"
+                )
+            try:
+                data = data.get(part) if isinstance(data, dict) else data[int(part)]
+            except (KeyError, IndexError, ValueError):
+                pytest.fail(f"Invalid path '{data_path}'{context}")
 
-def parse_response_list(
-    response_data: Dict[str, Any],
-    model_class: Type[T],
-    schema: Dict[str, Any],
-    data_path: str,
-    validate: bool = True,
-    name: Optional[str] = None
-) -> Optional[list[T]]:
-    """
-    Parse an optional list from API response data into a list of Pydantic models.
-    
-    Args:
-        response_data: The API response data
-        model_class: The Pydantic model class to parse items into
-        schema: JSON schema to validate against
-        data_path: Path to the optional list in the response (e.g., "data.users")
-        validate: Whether to perform schema validation
-        name: Optional name for error messages
-        
-    Returns:
-        List of model_class instances or None if not present
-    """
-    if validate:
-        validate_schema(response_data, schema, name)
-    
-    # Extract optional list data from nested path
-    parts = data_path.split('.')
-    data = response_data
-    for part in parts:
-        data = data.get(part)
-    
-    return [model_class.parse_obj(item) for item in data] if isinstance(data, list) else None
+            if data is None:
+                pytest.fail(f"Data not found at path '{data_path}'{context}")
 
-def parse_response_dict(
-    response_data: Dict[str, Any],
-    model_class: Type[T],
-    schema: Dict[str, Any],
-    data_path: str,
-    validate: bool = True,
-    name: Optional[str] = None
-) -> Optional[Dict[str, T]]:
-    """
-    Parse an optional dictionary from API response data into a dict of Pydantic models.
-    
-    Args:
-        response_data: The API response data
-        model_class: The Pydantic model class to parse items into
-        schema: JSON schema to validate against
-        data_path: Path to the optional dict in the response (e.g., "data.users")
-        validate: Whether to perform schema validation
-        name: Optional name for error messages
-        
-    Returns:
-        Dictionary of model_class instances or None if not present
-    """
-    if validate:
-        validate_schema(response_data, schema, name)
-    
-    # Extract optional dict data from nested path
-    parts = data_path.split('.')
-    data = response_data
-    for part in parts:
-        data = data.get(part)
-    
-    return {key: model_class.parse_obj(value) for key, value in data.items()} if isinstance(data, dict) else None
-
-
-def parse_response_dict_list(
-    response_data: Dict[str, Any],
-    model_class: Type[T],
-    schema: Dict[str, Any],
-    data_path: str,
-    validate: bool = True,
-    name: Optional[str] = None
-) -> Optional[Dict[str, Optional[list[T]]]]:
-    """
-    Parse an optional dictionary of optional lists from API response data into a dict of optional lists of Pydantic models.
-    
-    Args:
-        response_data: The API response data
-        model_class: The Pydantic model class to parse items into
-        schema: JSON schema to validate against
-        data_path: Path to the optional dict of optional lists in the response (e.g., "data.users")
-        validate: Whether to perform schema validation
-        name: Optional name for error messages
-        
-    Returns:
-        Dictionary of optional lists of model_class instances or None if not present
-    """
-    if validate:
-        validate_schema(response_data, schema, name)
-    
-    # Extract optional dict of optional lists data from nested path
-    parts = data_path.split('.')
-    data = response_data
-    for part in parts:
-        data = data.get(part)
-    
-    if not isinstance(data, dict):
-        return None
-    
-    return {key: ([model_class.parse_obj(item) for item in value] if value is not None else None) for key, value in data.items()}
-
-
-def parse_response_dict_dict(
-    response_data: Dict[str, Any],
-    model_class: Type[T],
-    schema: Dict[str, Any],
-    data_path: str,
-    validate: bool = True,
-    name: Optional[str] = None
-) -> Optional[Dict[str, Optional[T]]]:
-    """
-    Parse an optional dictionary of optional items from API response data into a dict of optional Pydantic models.
-    
-    Args:
-        response_data: The API response data
-        model_class: The Pydantic model class to parse items into
-        schema: JSON schema to validate against
-        data_path: Path to the optional dict of optional items in the response (e.g., "data.users")
-        validate: Whether to perform schema validation
-        name: Optional name for error messages
-        
-    Returns:
-        Dictionary of optional model_class instances or None if not present
-    """
-    if validate:
-        validate_schema(response_data, schema, name)
-    
-    # Extract optional dict of optional items data from nested path
-    parts = data_path.split('.')
-    data = response_data
-    for part in parts:
-        data = data.get(part)
-    
-    return {key: (model_class.parse_obj(value) if value is not None else None) for key, value in data.items()} if isinstance(data, dict) else None
-
-def parse_response_list_list(
-    response_data: Dict[str, Any],
-    model_class: Type[T],
-    schema: Dict[str, Any],
-    data_path: str,
-    validate: bool = True,
-    name: Optional[str] = None
-) -> Optional[list[Optional[T]]]:
-    """
-    Parse an optional list of optional items from API response data into a list of optional Pydantic models.
-    
-    Args:
-        response_data: The API response data
-        model_class: The Pydantic model class to parse items into
-        schema: JSON schema to validate against
-        data_path: Path to the optional list of optional items in the response (e.g., "data.users")
-        validate: Whether to perform schema validation
-        name: Optional name for error messages
-        
-    Returns:
-        List of optional model_class instances or None if not present
-    """
-    if validate:
-        validate_schema(response_data, schema, name)
-    
-    # Extract optional list of optional items data from nested path
-    parts = data_path.split('.')
-    data = response_data
-    for part in parts:
-        data = data.get(part)
-    
-    return [model_class.parse_obj(item) if item is not None else None for item in data] if isinstance(data, list) else None
+    try:
+        return model_class.model_validate(data)
+    except ValidationError as e:
+        error_details = json.dumps(e.errors(), indent=2)
+        data_preview = json.dumps(data, indent=2)[:200] + "..."  # Truncate long output
+        pytest.fail(
+            f"Validation error parsing{context}:\n"
+            f"Data: {data_preview}\n"
+            f"Errors: {error_details}"
+        )
