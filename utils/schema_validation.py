@@ -1,8 +1,8 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import jsonschema
-import pytest
 from jsonschema import validators
+import pytest
 
 
 def format_validation_error(error: jsonschema.ValidationError) -> str:
@@ -18,7 +18,7 @@ class SchemaValidator:
     _schema_cache = {}
 
     @classmethod
-    def get_validator(cls, schema: Dict[str, Any]) -> jsonschema.validators.Validator: # type: ignore
+    def get_validator(cls, schema: Dict[str, Any]) -> jsonschema.validators.Validator:
         """Get or create a cached validator for the schema."""
         schema_id = id(schema)
         if schema_id not in cls._schema_cache:
@@ -35,13 +35,14 @@ class SchemaValidator:
         return [format_validation_error(error) for error in errors]
 
 
-def validate_schema(data: Any, schema: Dict[str, Any]) -> bool:
+def validate_schema(data: Any, schema: Dict[str, Any], name: Optional[str] = None) -> bool:
     """
     Validate data against a schema and fail the test if validation errors exist.
     
     Args:
         data: The data to validate
         schema: The JSON schema to validate against
+        name: Optional name to identify what's being validated in error messages
         
     Returns:
         True if validation passes
@@ -51,5 +52,6 @@ def validate_schema(data: Any, schema: Dict[str, Any]) -> bool:
     """
     errors = SchemaValidator.validate(data, schema)
     if errors:
-        pytest.fail(f"Schema validation failed: {errors}")
+        context = f" for {name}" if name else ""
+        pytest.fail(f"Schema validation failed{context}: {errors}")
     return True
