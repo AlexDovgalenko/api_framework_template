@@ -1,4 +1,4 @@
-"""FastAPI application used by the test-suite.
+"""FastAPI application used by the dummy test-suite.
 
 Key points
 ~~~~~~~~~~
