@@ -53,5 +53,5 @@ def validate_schema(data: Any, schema: Dict[str, Any], name: Optional[str] = Non
     errors = SchemaValidator.validate(data, schema)
     if errors:
         context = f" for {name}" if name else ""
-        pytest.fail(f"Schema validation failed{context}: {errors}")
+        pytest.fail(f"Schema validation failed {context}: {errors}")
     return True
