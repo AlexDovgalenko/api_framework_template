@@ -58,7 +58,11 @@ USER_DETAILS_LIST = [
         "username": "diana.davis",
         "full_name": "Diana Davis",
         "is_active": False,
-        "contact": {"email": "diana.davis@example.com", "phone": None, "addresses": []},
+        "contact": {
+            "email": "diana.davis@example.com",
+            "phone": "+1987654324",
+            "addresses": [],
+        },
         "permissions": [],
     },
 ]

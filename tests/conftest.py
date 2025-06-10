@@ -300,7 +300,7 @@ def create_mock_items(requests_mock, base_url, res_path: str, mock_data: list[di
 @pytest.fixture
 def mock_user_details(requests_mock, base_url):
     """Provide a sample User Details resource for mocking."""
-    logging.info(f"Setting up user details mock with base URL: {base_url}")
+    logging.debug(f"Setting up user details mock with base URL: {base_url}")
     return create_mock_items(
         requests_mock=requests_mock,
         base_url=base_url,
