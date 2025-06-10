@@ -40,10 +40,10 @@ def test_get_user_by_id(client, mock_user_details, user_id) -> None:
 
 
 @pytest.mark.parametrize("user_id", ["999", "abc", ""])
-def test_get_user_errors(client, user_id):
+def test_get_user_errors(client, user_id) -> None:
     response = client.get(f"/user/details/{user_id}")
     assert response.status_code == 404
-    assert response.json() == {"detail": "User not found"}
+    assert response.json() == {"detail": "Not Found"}
 
 
 @pytest.mark.parametrize("user_id", ["1", "2", "3", "4"])

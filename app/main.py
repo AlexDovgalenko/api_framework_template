@@ -70,7 +70,7 @@ def get_user_by_email(email: str):
     with database_engine.begin() as connection:
         row = connection.execute(query).fetchone()
     if not row:
-        raise HTTPException(404, "Not found")
+        raise HTTPException(404, "Not Found")
 
     return {"id": row.id, "email": row.email}
 
