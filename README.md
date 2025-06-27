@@ -53,10 +53,21 @@ uvicorn app.main:app --port=50001
 ### 1. Run Tests in Docker
 Run test using 'Detached' mode (works on Linux and MacOS, For Windows, replace $(pwd) with the absolute path of the project directory):
 
-*Start contained in the detached mode*
+*Start contained in the detached mode on Linux/Unix/Mac hosts*
 ```bash
 docker run --rm -td -v "$(pwd):/tests" -v "$(pwd)/logs:/tests/logs" -v "$(pwd)/results:/tests/results" --name api-tests-container api-tests
 ```
+
+*Start contained in the detached mode on Windows host (PowerShell)*
+```bash
+docker run --rm -td -v "${PWD}:/tests" -v "${PWD}\logs:/tests/logs" -v "${PWD}\results:/tests/results" --name api-tests-container api-tests
+```
+
+*Start contained in the detached mode on Windows host (CMD)*
+```bash
+docker run --rm -td -v "%cd%:/tests" -v "%cd%\logs:/tests/logs" -v "%cd%\results:/tests/results" --name api-tests-container api-tests
+```
+
 *Execute tests within running Docker container, starting mock app*
 ```bash
 docker exec api-tests-container -c "python3 -m pytest -sv --log-level=INFO tests/test_users.py::test_create_and_fetch_user"
