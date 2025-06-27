@@ -9,6 +9,5 @@ ACCESS_TOKEN_TTL_MIN: int = 60  # minutes
 APP_TITLE: str = "Users API – SQLite edition"
 APP_LOGGER_NAME: str = "demo_api"
 APP_PROTOCOL: str = "http"
-LOG_DIR: str = "logs"  # Directory for log files
 TEST_USER_EMAIL: str = "test-user@example.com"
 TEST_PASSWORD: str = "super_strong_password"  # SARCASM 😄

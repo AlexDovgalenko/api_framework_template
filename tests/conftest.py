@@ -8,7 +8,6 @@ import re
 import subprocess
 import tempfile
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Generator, Optional
 
@@ -23,7 +22,6 @@ from constants.common import (
     APP_PROTOCOL,
     DB_PROTOCOL,
     JWT_SECRET,
-    LOG_DIR,
     TEST_PASSWORD,
     TEST_USER_EMAIL,
 )
@@ -51,18 +49,18 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Create logs/ dir and configure root logger once for the test session."""
     console_level = config.option.log_level or "INFO"
-    logs_dir = Path(LOG_DIR)  # Ensure logs are written to the correct directory
-    logs_dir.mkdir(exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    session_log_file = logs_dir / f"test_{timestamp}.log"
-
+    # Let logging_config handle the log file path creation
     logging_config.configure_logging(
         level=console_level,
-        logfile_path=str(session_log_file),
         enable_console=True,
     )
-    logging.getLogger(__name__).info("Logging to %s", session_log_file)
+
+    # Log the configuration
+    logging.getLogger(__name__).info(
+        "Test session started with log level: %s", console_level
+    )
+
     # Pass logging configuration to FastAPI mock application
     os.environ["LOG_LEVEL"] = console_level
 
